@@ -72,6 +72,10 @@
 
         <!-- Fixed Bottom Actions -->
         <div class="bottom-actions">
+            <button id="btn-add-fund" class="fab-secondary">
+                <i class="fas fa-wallet"></i>
+                <span>Poner Plata</span>
+            </button>
             <button id="btn-add-expense" class="fab-primary">
                 <i class="fas fa-plus"></i>
                 <span>Nuevo Gasto</span>
@@ -82,20 +86,27 @@
         <div id="modal-overlay" class="modal-overlay hidden">
             <div class="glass-panel modal-content">
                 <div class="modal-header">
-                    <h2>Registrar Gasto</h2>
+                    <h2 id="modal-title">Registrar Gasto</h2>
                     <button id="close-modal" class="close-btn"><i class="fas fa-times"></i></button>
                 </div>
+
+                <div class="modal-tabs">
+                    <button class="tab-btn active" data-type="expense">Gasto</button>
+                    <button class="tab-btn" data-type="contribution">Aporte</button>
+                </div>
+
                 <form id="expense-form">
-                    <div class="form-group">
+                    <input type="hidden" id="entry-type" value="expense">
+                    <div class="form-group" id="group-desc">
                         <label for="exp-desc">¿En qué gastaron?</label>
-                        <input type="text" id="exp-desc" placeholder="Ej. Pizza, Super, Nafta" required>
+                        <input type="text" id="exp-desc" placeholder="Ej. Pizza, Super, Nafta">
                     </div>
                     <div class="form-group">
                         <label for="exp-amount">Monto</label>
                         <input type="number" id="exp-amount" placeholder="0.00" step="0.01" required>
                     </div>
                     <div class="form-group">
-                        <label>¿Quién pagó?</label>
+                        <label id="label-user">¿Quién pagó?</label>
                         <div class="user-selector">
                             <label class="user-radio">
                                 <input type="radio" name="payer" value="0" checked>
@@ -111,7 +122,7 @@
                             </label>
                         </div>
                     </div>
-                    <button type="submit" class="btn-submit">Agregar Gasto</button>
+                    <button type="submit" id="btn-submit" class="btn-submit">Agregar Gasto</button>
                 </form>
             </div>
         </div>

@@ -1,6 +1,6 @@
 // Initialize Gun.js with a public relay
 const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-const app = gun.get('split-bill-v1-gonzalo');
+const app = gun.get('split-bill-v1-gonzalo-v2'); // New namespace for new logic
 
 // App State
 const state = {
@@ -9,7 +9,7 @@ const state = {
         { id: 1, name: 'Usuario 2', color: '#10b981' },
         { id: 2, name: 'Usuario 3', color: '#f59e0b' }
     ],
-    expenses: []
+    items: [] // Will contain both expenses and contributions
 };
 
 // DOM Elements
@@ -17,29 +17,33 @@ const totalAmountEl = document.getElementById('total-amount');
 const expenseListEl = document.getElementById('expense-list');
 const settlementListEl = document.getElementById('settlement-list');
 const btnAddExpense = document.getElementById('btn-add-expense');
+const btnAddFund = document.getElementById('btn-add-fund');
 const modalOverlay = document.getElementById('modal-overlay');
 const closeModal = document.getElementById('close-modal');
 const expenseForm = document.getElementById('expense-form');
+const modalTitle = document.getElementById('modal-title');
+const entryTypeInput = document.getElementById('entry-type');
+const groupDesc = document.getElementById('group-desc');
+const labelUser = document.getElementById('label-user');
+const btnSubmit = document.getElementById('btn-submit');
+const tabBtns = document.querySelectorAll('.tab-btn');
 
-// Listen for expenses from Gun.js
-app.get('expenses').map().on((data, id) => {
+// Listen for items from Gun.js
+app.get('items').map().on((data, id) => {
     if (!data) return;
 
-    // Find if it already exists or add new
-    const index = state.expenses.findIndex(e => e.id === id);
+    const index = state.items.findIndex(e => e.id === id);
     if (index > -1) {
-        state.expenses[index] = { ...data, id };
+        state.items[index] = { ...data, id };
     } else {
-        state.expenses.unshift({ ...data, id });
+        state.items.unshift({ ...data, id });
     }
 
-    // Sort by date (descending)
-    state.expenses.sort((a, b) => b.timestamp - a.timestamp);
-
+    state.items.sort((a, b) => b.timestamp - a.timestamp);
     renderApp();
 });
 
-// Functions
+// UI Helpers
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-AR', {
         style: 'currency',
@@ -47,19 +51,42 @@ const formatCurrency = (amount) => {
     }).format(amount);
 };
 
-const calculateSplits = () => {
-    const total = state.expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
-    const perPerson = total / 3;
+const setModalType = (type) => {
+    entryTypeInput.value = type;
+    tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.type === type));
 
-    const paid = [0, 0, 0];
-    state.expenses.forEach(exp => {
-        paid[exp.payerId] += parseFloat(exp.amount);
+    if (type === 'expense') {
+        modalTitle.textContent = 'Registrar Gasto';
+        groupDesc.style.display = 'block';
+        labelUser.textContent = '¿Quién pagó?';
+        btnSubmit.textContent = 'Agregar Gasto';
+    } else {
+        modalTitle.textContent = 'Aportar Plata';
+        groupDesc.style.display = 'none';
+        labelUser.textContent = '¿Quién aporta?';
+        btnSubmit.textContent = 'Confirmar Aporte';
+    }
+};
+
+// Logic
+const calculateApp = () => {
+    let totalSpent = 0;
+    const contributions = [0, 0, 0];
+
+    state.items.forEach(item => {
+        const amount = parseFloat(item.amount);
+        if (item.type === 'expense') {
+            totalSpent += amount;
+            contributions[item.payerId] += amount;
+        } else if (item.type === 'contribution') {
+            contributions[item.payerId] += amount;
+        }
     });
 
-    // Balance: what you paid minus what you should have paid
-    const balances = paid.map(amount => amount - perPerson);
+    const perPersonDebt = totalSpent / 3;
+    const balances = contributions.map(c => c - perPersonDebt);
 
-    return { total, perPerson, balances };
+    return { totalSpent, balances };
 };
 
 const getSettlements = (balances) => {
@@ -72,18 +99,13 @@ const getSettlements = (balances) => {
     });
 
     const settlements = [];
-
     let d = 0, c = 0;
     while (d < debtors.length && c < creditors.length) {
         const debtor = debtors[d];
         const creditor = creditors[c];
         const settledAmount = Math.min(debtor.amount, creditor.amount);
 
-        settlements.push({
-            from: debtor.id,
-            to: creditor.id,
-            amount: settledAmount
-        });
+        settlements.push({ from: debtor.id, to: creditor.id, amount: settledAmount });
 
         debtor.amount -= settledAmount;
         creditor.amount -= settledAmount;
@@ -91,18 +113,15 @@ const getSettlements = (balances) => {
         if (debtor.amount <= 0.01) d++;
         if (creditor.amount <= 0.01) c++;
     }
-
     return settlements;
 };
 
 const renderApp = () => {
-    const { total, perPerson, balances } = calculateSplits();
+    const { totalSpent, balances } = calculateApp();
     const settlements = getSettlements(balances);
 
-    // Update Totals
-    totalAmountEl.textContent = formatCurrency(total);
+    totalAmountEl.textContent = formatCurrency(totalSpent);
 
-    // Update Individual Balances
     balances.forEach((bal, i) => {
         const el = document.getElementById(`balance-${i}`);
         el.textContent = formatCurrency(bal);
@@ -111,7 +130,6 @@ const renderApp = () => {
         else if (bal < -0.1) el.classList.add('negative');
     });
 
-    // Update Settlements
     if (settlements.length === 0) {
         settlementListEl.innerHTML = '<p class="placeholder">Todo saldado, ¡genial!</p>';
     } else {
@@ -125,43 +143,52 @@ const renderApp = () => {
         `).join('');
     }
 
-    // Update Expense List
-    expenseListEl.innerHTML = state.expenses.map(exp => `
+    expenseListEl.innerHTML = state.items.map(item => `
         <li class="expense-item">
             <div class="expense-info">
-                <h4>${exp.desc}</h4>
-                <p>Pagado por ${state.users[exp.payerId].name}</p>
+                <h4>${item.type === 'expense' ? item.desc : 'Aporte de Capital'}</h4>
+                <p>${item.type === 'expense' ? 'Pagado por' : 'Aportado por'} ${state.users[item.payerId].name}</p>
             </div>
             <div class="expense-meta">
-                <div class="expense-price">${formatCurrency(exp.amount)}</div>
-                <p>${new Date(exp.timestamp).toLocaleDateString()}</p>
+                <div class="expense-price" style="color: ${item.type === 'contribution' ? '#10b981' : 'inherit'}">
+                    ${item.type === 'contribution' ? '+' : ''}${formatCurrency(item.amount)}
+                </div>
+                <p>${new Date(item.timestamp).toLocaleDateString()}</p>
             </div>
         </li>
     `).join('');
 };
 
-// Event Listeners
+// Events
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => setModalType(btn.dataset.type));
+});
+
 btnAddExpense.addEventListener('click', () => {
+    setModalType('expense');
     modalOverlay.classList.remove('hidden');
 });
 
-closeModal.addEventListener('click', () => {
-    modalOverlay.classList.add('hidden');
+btnAddFund.addEventListener('click', () => {
+    setModalType('contribution');
+    modalOverlay.classList.remove('hidden');
 });
+
+closeModal.addEventListener('click', () => modalOverlay.classList.add('hidden'));
 
 expenseForm.addEventListener('submit', (e) => {
     e.preventDefault();
-
-    const desc = document.getElementById('exp-desc').value;
+    const type = entryTypeInput.value;
+    const desc = document.getElementById('exp-desc').value || (type === 'contribution' ? 'Aporte' : '');
     const amount = document.getElementById('exp-amount').value;
     const payerId = document.querySelector('input[name="payer"]:checked').value;
 
-    if (!desc || !amount) return;
+    if (!amount) return;
 
-    // Add to Gun.js
-    app.get('expenses').set({
+    app.get('items').set({
+        type,
         desc,
-        amount,
+        amount: parseFloat(amount),
         payerId: parseInt(payerId),
         timestamp: Date.now()
     });
@@ -170,5 +197,5 @@ expenseForm.addEventListener('submit', (e) => {
     modalOverlay.classList.add('hidden');
 });
 
-// Initial Render
+// Initial
 renderApp();

@@ -272,45 +272,35 @@ body {
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.fab-primary:active {
-    transform: translateX(-50%) scale(0.95);
+.fab-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    padding: 0.8rem 1.2rem;
+    border-radius: 100px;
+    color: var(--text-main);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.fab-primary i {
-    font-size: 1.2rem;
+.fab-primary:active,
+.fab-secondary:active {
+    transform: scale(0.95);
 }
 
-/* Modal */
-.modal-overlay {
+.bottom-actions {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(13, 13, 26, 0.8);
+    bottom: calc(1.5rem + var(--safe-area-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(8px);
-    transition: opacity 0.3s;
-}
-
-.modal-overlay.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.modal-content {
-    width: 90%;
-    max-width: 400px;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
+    gap: 12px;
+    width: max-content;
 }
 
 .close-btn {
@@ -319,6 +309,31 @@ body {
     color: var(--text-dim);
     font-size: 1.2rem;
     cursor: pointer;
+}
+
+.modal-tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: white;
 }
 
 .form-group {
