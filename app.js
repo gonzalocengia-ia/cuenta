@@ -1,33 +1,35 @@
-// Initialize Gun.js with multiple public relays for better availability
-const relays = [
-    'https://gun-manhattan.herokuapp.com/gun',
-    'https://gun-us.herokuapp.com/gun',
-    'https://gun-eu.herokuapp.com/gun',
-    'https://dweb.link/gun'
-];
-const gun = Gun(relays);
-const app = gun.get('split-bill-v2-gonzalo-stable'); // Stable namespace
+// Safe Gun Initialization
+let gun, app;
+try {
+    const relays = [
+        'https://gun-manhattan.herokuapp.com/gun',
+        'https://gun-us.herokuapp.com/gun'
+    ];
+    gun = new Gun(relays);
+    app = gun.get('split-bill-v2-gonzalo-v3');
+} catch (e) {
+    console.error("Gun init failed:", e);
+}
 
 // Connection Status Monitor
 const syncDot = document.getElementById('sync-dot');
 const syncText = document.getElementById('sync-text');
 
-// Gun.js doesn't have a direct "on connect" for all relays easily, 
-// but we can monitor peers.
-setInterval(() => {
-    const peers = Object.keys(gun.back('opt.peers') || {});
-    const connected = peers.some(p => gun.back('opt.peers')[p].wire && gun.back('opt.peers')[p].wire.readyState === 1);
+if (syncDot && syncText) {
+    setInterval(() => {
+        try {
+            // Safer check for peers
+            const peers = (gun && gun.back) ? Object.keys(gun.back('opt.peers') || {}) : [];
+            const connected = peers.length > 0;
 
-    if (connected) {
-        syncDot.style.background = '#10b981';
-        syncDot.style.boxShadow = '0 0 10px #10b981';
-        syncText.textContent = 'Conectado';
-    } else {
-        syncDot.style.background = '#ef4444';
-        syncDot.style.boxShadow = '0 0 10px #ef4444';
-        syncText.textContent = 'Reconectando...';
-    }
-}, 3000);
+            syncDot.style.background = connected ? '#10b981' : '#ef4444';
+            syncDot.style.boxShadow = connected ? '0 0 10px #10b981' : '0 0 10px #ef4444';
+            syncText.textContent = connected ? 'Conectado' : 'Conectando...';
+        } catch (e) {
+            console.warn("Sync status error", e);
+        }
+    }, 5000);
+}
 
 // App State
 const state = {
@@ -56,19 +58,21 @@ const btnSubmit = document.getElementById('btn-submit');
 const tabBtns = document.querySelectorAll('.tab-btn');
 
 // Listen for items from Gun.js
-app.get('items').map().on((data, id) => {
-    if (!data) return;
+if (app) {
+    app.get('items').map().on((data, id) => {
+        if (!data) return;
 
-    const index = state.items.findIndex(e => e.id === id);
-    if (index > -1) {
-        state.items[index] = { ...data, id };
-    } else {
-        state.items.unshift({ ...data, id });
-    }
+        const index = state.items.findIndex(e => e.id === id);
+        if (index > -1) {
+            state.items[index] = { ...data, id };
+        } else {
+            state.items.unshift({ ...data, id });
+        }
 
-    state.items.sort((a, b) => b.timestamp - a.timestamp);
-    renderApp();
-});
+        state.items.sort((a, b) => b.timestamp - a.timestamp);
+        renderApp();
+    });
+}
 
 // UI Helpers
 const formatCurrency = (amount) => {
@@ -210,7 +214,10 @@ expenseForm.addEventListener('submit', (e) => {
     const amount = document.getElementById('exp-amount').value;
     const payerId = document.querySelector('input[name="payer"]:checked').value;
 
-    if (!amount) return;
+    if (!amount || !app) {
+        alert("Error: El sistema de sincronización no está listo.");
+        return;
+    }
 
     app.get('items').set({
         type,
