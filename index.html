@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6366f1">
+    <title>Split Bill - Realtime</title>
+    <meta name="description" content="Dividí gastos en tiempo real con tus amigos.">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-panel main-header">
+            <div class="header-content">
+                <h1>Split<span>Bill</span></h1>
+                <div class="status-indicator">
+                    <span id="sync-dot" class="dot"></span>
+                    <span id="sync-text">Conectado</span>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <!-- Summary Dashboard -->
+            <section class="glass-panel summary-card">
+                <div class="total-section">
+                    <h2>Total Gastado</h2>
+                    <div class="total-amount" id="total-amount">$0.00</div>
+                </div>
+                <div class="users-grid">
+                    <div class="user-summary" data-user="0">
+                        <div class="user-avatar" style="background: var(--user1-color)">U1</div>
+                        <div class="user-name" id="name-0">Usuario 1</div>
+                        <div class="user-balance" id="balance-0">$0.00</div>
+                    </div>
+                    <div class="user-summary" data-user="1">
+                        <div class="user-avatar" style="background: var(--user2-color)">U2</div>
+                        <div class="user-name" id="name-1">Usuario 2</div>
+                        <div class="user-balance" id="balance-1">$0.00</div>
+                    </div>
+                    <div class="user-summary" data-user="2">
+                        <div class="user-avatar" style="background: var(--user3-color)">U3</div>
+                        <div class="user-name" id="name-2">Usuario 3</div>
+                        <div class="user-balance" id="balance-2">$0.00</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settlement Card -->
+            <section class="glass-panel settlement-card">
+                <h3>Resumen de Deudas</h3>
+                <div id="settlement-list" class="settlement-list">
+                    <p class="placeholder">Todo saldado, ¡genial!</p>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="history-section">
+                <div class="section-header">
+                    <h3>Gastos Recientes</h3>
+                </div>
+                <ul id="expense-list" class="expense-list">
+                    <!-- Expenses will be injected here -->
+                </ul>
+            </section>
+        </main>
+
+        <!-- Fixed Bottom Actions -->
+        <div class="bottom-actions">
+            <button id="btn-add-expense" class="fab-primary">
+                <i class="fas fa-plus"></i>
+                <span>Nuevo Gasto</span>
+            </button>
+        </div>
+
+        <!-- Overlays/Modals -->
+        <div id="modal-overlay" class="modal-overlay hidden">
+            <div class="glass-panel modal-content">
+                <div class="modal-header">
+                    <h2>Registrar Gasto</h2>
+                    <button id="close-modal" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <form id="expense-form">
+                    <div class="form-group">
+                        <label for="exp-desc">¿En qué gastaron?</label>
+                        <input type="text" id="exp-desc" placeholder="Ej. Pizza, Super, Nafta" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="exp-amount">Monto</label>
+                        <input type="number" id="exp-amount" placeholder="0.00" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Quién pagó?</label>
+                        <div class="user-selector">
+                            <label class="user-radio">
+                                <input type="radio" name="payer" value="0" checked>
+                                <span class="radio-btn" style="--color: var(--user1-color)">U1</span>
+                            </label>
+                            <label class="user-radio">
+                                <input type="radio" name="payer" value="1">
+                                <span class="radio-btn" style="--color: var(--user2-color)">U2</span>
+                            </label>
+                            <label class="user-radio">
+                                <input type="radio" name="payer" value="2">
+                                <span class="radio-btn" style="--color: var(--user3-color)">U3</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit">Agregar Gasto</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gun.js for Real-time Sync -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="app.js" defer></script>
+</body>
+
+</html>
