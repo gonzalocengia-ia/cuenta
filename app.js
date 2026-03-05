@@ -1,6 +1,33 @@
-// Initialize Gun.js with a public relay
-const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-const app = gun.get('split-bill-v1-gonzalo-v2'); // New namespace for new logic
+// Initialize Gun.js with multiple public relays for better availability
+const relays = [
+    'https://gun-manhattan.herokuapp.com/gun',
+    'https://gun-us.herokuapp.com/gun',
+    'https://gun-eu.herokuapp.com/gun',
+    'https://dweb.link/gun'
+];
+const gun = Gun(relays);
+const app = gun.get('split-bill-v2-gonzalo-stable'); // Stable namespace
+
+// Connection Status Monitor
+const syncDot = document.getElementById('sync-dot');
+const syncText = document.getElementById('sync-text');
+
+// Gun.js doesn't have a direct "on connect" for all relays easily, 
+// but we can monitor peers.
+setInterval(() => {
+    const peers = Object.keys(gun.back('opt.peers') || {});
+    const connected = peers.some(p => gun.back('opt.peers')[p].wire && gun.back('opt.peers')[p].wire.readyState === 1);
+
+    if (connected) {
+        syncDot.style.background = '#10b981';
+        syncDot.style.boxShadow = '0 0 10px #10b981';
+        syncText.textContent = 'Conectado';
+    } else {
+        syncDot.style.background = '#ef4444';
+        syncDot.style.boxShadow = '0 0 10px #ef4444';
+        syncText.textContent = 'Reconectando...';
+    }
+}, 3000);
 
 // App State
 const state = {
